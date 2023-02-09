@@ -1,0 +1,19 @@
+name: "Determine which turbo packages have changed since the last successful action run"
+description: "Greet someone and record the time"
+inputs:
+  branch:
+    description: "Branch to check"
+    required: true
+    default: "main"
+  nameToWorkflowMapping:
+    description: 'JSON object describing the relationship of a turborepo package name to the workflow to check: {"@org/packageA": "deployPackageA.yaml"}'
+    required: true
+    default: "{}"
+
+outputs:
+  affectedPackages: # id of output
+    description: "The affected packages"
+
+runs:
+  using: "node16"
+  main: "dist/index.js"

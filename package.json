@@ -1,0 +1,19 @@
+{
+  "name": "get-affected-turbo-packages",
+  "version": "1.0.0",
+  "description": "A GitHub action to determine which turbo packages have changed since the last successful action run",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "ncc build src/index.js -o dist"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^5.1.1"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.36.1"
+  }
+}
