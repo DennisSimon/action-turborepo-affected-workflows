@@ -55,9 +55,10 @@ const run = async () => {
   try {
     const results = await Promise.all(
       Object.entries(mappedWorkflows).map(([name, workflow]) => {
+        let workflowsArray = workflow;
         if (!Array.isArray(workflow)) {
           if (typeof workflow === "string" && workflow.length > 0) {
-            workflow = [workflow];
+            workflowsArray = [workflow];
           } else {
             core.setFailed(
               "Workflow mapping must be a string or an array of strings"
@@ -66,7 +67,7 @@ const run = async () => {
             return;
           }
         }
-        isAffected(name, workflow, owner, repo, branch, octokit);
+        isAffected(name, workflowsArray, owner, repo, branch, octokit);
       })
     );
     core.setOutput("affectedPackages", JSON.stringify(results));
