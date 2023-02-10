@@ -5,22 +5,27 @@ const exec = util.promisify(require("child_process").exec);
 
 const isAffected = async (pck, workflows, owner, repo, branch, octokit) => {
   const allRuns = await Promise.all(
-    workflows.map((workflow) =>
-      octokit.rest.actions.listWorkflowRuns({
+    workflows.map((workflow) => {
+      console.log(`retrieving last successful run for ${workflow}...`);
+      return octokit.rest.actions.listWorkflowRuns({
         owner,
         repo,
         workflow_id: workflow,
         status: "success",
         branch,
-      })
-    )
+      });
+    })
   );
 
   for (const runs of allRuns) {
     if (runs.data.workflow_runs.length === 0) {
+      console.log("no successful runs found, package is affected");
       return true;
     }
     const lastRun = runs.data.workflow_runs[0];
+    console.log(
+      `checking if package has changed since last successful run ${lastRun}...`
+    );
 
     const sanitizedPackage = pck.replaceAll(/["'\\`]/);
 
@@ -30,7 +35,13 @@ const isAffected = async (pck, workflows, owner, repo, branch, octokit) => {
 
     const result = JSON.parse(stdout);
 
-    if (result.packages.contains(pck)) {
+    console.log(
+      `checking if package "${pck}" is in affected packages: "${
+        result?.packages || []
+      }"`
+    );
+
+    if (result?.packages?.contains(pck)) {
       return true;
     }
   }
@@ -52,6 +63,8 @@ const run = async () => {
     return;
   }
 
+  console.log("starting to check affected packages...");
+
   try {
     const results = await Promise.all(
       Object.entries(mappedWorkflows).map(([name, workflow]) => {
@@ -59,6 +72,9 @@ const run = async () => {
         if (!Array.isArray(workflow)) {
           if (typeof workflow === "string" && workflow.length > 0) {
             workflowsArray = [workflow];
+            console.log(
+              `${name} is not an array, but a string. Converting to array...`
+            );
           } else {
             core.setFailed(
               "Workflow mapping must be a string or an array of strings"
@@ -67,7 +83,7 @@ const run = async () => {
             return;
           }
         }
-        isAffected(name, workflowsArray, owner, repo, branch, octokit);
+        return isAffected(name, workflowsArray, owner, repo, branch, octokit);
       })
     );
     core.setOutput("affectedPackages", JSON.stringify(results));
