@@ -49,7 +49,13 @@ const isAffected = async (pck, workflows, owner, repo, branch, octokit) => {
 };
 
 const run = async () => {
-  const mapping = core.getInput("nameToWorkflowMapping");
+  let mapping = core.getInput("nameToWorkflowMapping");
+  // GitHub Actions escapes user input so we need to unescape it
+  mapping = mapping
+    .replaceAll(/\\"/g, '"') // replace escaped quotes
+    .replaceAll(/\\n/g, "\n") // replace escaped newlines
+    .slice(1, -1); // remove quotes
+
   const branch = core.getInput("branch");
   const octokit = github.getOctokit(core.getInput("github_token"));
   const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
