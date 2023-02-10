@@ -58,6 +58,7 @@ const run = async () => {
 
   try {
     mappedWorkflows = JSON.parse(mapping);
+    console.log({ mappedWorkflows, mapping });
   } catch (e) {
     core.setFailed(`Failed to parse nameToWorkflowMapping: ${e}`);
     return;
@@ -67,13 +68,13 @@ const run = async () => {
 
   try {
     const results = await Promise.all(
-      Object.entries(mappedWorkflows).map(([name, workflow]) => {
+      Object.entries(mappedWorkflows).map(async ([name, workflow]) => {
         let workflowsArray = workflow;
         if (!Array.isArray(workflow)) {
           if (typeof workflow === "string" && workflow.length > 0) {
             workflowsArray = [workflow];
             console.log(
-              `${name} is not an array, but a string. Converting to array...`
+              `${workflow} is not an array, but a string. Converting to array...`
             );
           } else {
             core.setFailed(
@@ -83,10 +84,17 @@ const run = async () => {
             return;
           }
         }
-        return isAffected(name, workflowsArray, owner, repo, branch, octokit);
+        if (
+          await isAffected(name, workflowsArray, owner, repo, branch, octokit)
+        ) {
+          return name;
+        }
       })
     );
-    core.setOutput("affectedPackages", JSON.stringify(results));
+    core.setOutput(
+      "affectedPackages",
+      JSON.stringify(results.filter((r) => r))
+    );
   } catch (e) {
     core.setFailed(`Failed to check affected packages: ${e}`);
     return;
