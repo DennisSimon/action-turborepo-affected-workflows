@@ -27,7 +27,7 @@ const isAffected = async (pck, workflows, owner, repo, branch, octokit) => {
       `checking if package has changed since last successful run ${lastRun}...`
     );
 
-    const sanitizedPackage = pck.replaceAll(/["'\\`]/);
+    const sanitizedPackage = pck.replaceAll(/["'\\`]/g, "");
 
     const { stdout } = await exec(
       `npx turbo run test --filter='${sanitizedPackage}...[HEAD...${lastRun.head_commit.id}]' --dry=json`
