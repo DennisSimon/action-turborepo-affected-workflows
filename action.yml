@@ -9,6 +9,9 @@ inputs:
     description: 'JSON object describing the relationship of a turborepo package name to the workflow to check: {"@org/packageA": ["deployPackageA.yaml"]}'
     required: true
     default: "{}"
+  github_token: # github token to use
+    description: "Your GitHub access token"
+    required: true
 
 outputs:
   affectedPackages: # id of output
