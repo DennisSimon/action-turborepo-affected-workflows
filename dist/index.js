@@ -9787,28 +9787,38 @@ const github = __nccwpck_require__(5438);
 const util = __nccwpck_require__(3837);
 const exec = util.promisify((__nccwpck_require__(2081).exec));
 
-const isAffected = async (pck, workflow, owner, repo, branch, octokit) => {
-  const runs = await octokit.rest.actions.listWorkflowRuns({
-    owner,
-    repo,
-    workflow_id: workflow,
-    status: "success",
-    branch,
-  });
-  if (runs.data.workflow_runs.length === 0) {
-    return true;
-  }
-  const lastRun = runs.data.workflow_runs[0];
-
-  const sanitizedPackage = pck.replaceAll(/["'\\`]/);
-
-  const { stdout } = await exec(
-    `npx turbo run test --filter='${sanitizedPackage}...[HEAD...${lastRun.head_commit.id}]' --dry=json`
+const isAffected = async (pck, workflows, owner, repo, branch, octokit) => {
+  const allRuns = await Promise.all(
+    workflows.map((workflow) =>
+      octokit.rest.actions.listWorkflowRuns({
+        owner,
+        repo,
+        workflow_id: workflow,
+        status: "success",
+        branch,
+      })
+    )
   );
 
-  const result = JSON.parse(stdout);
+  for (const runs of allRuns) {
+    if (runs.data.workflow_runs.length === 0) {
+      return true;
+    }
+    const lastRun = runs.data.workflow_runs[0];
 
-  return result.packages.contains(pck);
+    const sanitizedPackage = pck.replaceAll(/["'\\`]/);
+
+    const { stdout } = await exec(
+      `npx turbo run test --filter='${sanitizedPackage}...[HEAD...${lastRun.head_commit.id}]' --dry=json`
+    );
+
+    const result = JSON.parse(stdout);
+
+    if (result.packages.contains(pck)) {
+      return true;
+    }
+  }
+  return false;
 };
 
 const run = async () => {
@@ -9828,9 +9838,20 @@ const run = async () => {
 
   try {
     const results = await Promise.all(
-      Object.entries(mappedWorkflows).map(([name, workflow]) =>
-        isAffected(name, workflow, owner, repo, branch, octokit)
-      )
+      Object.entries(mappedWorkflows).map(([name, workflow]) => {
+        if (!Array.isArray(workflow)) {
+          if (typeof workflow === "string" && workflow.length > 0) {
+            workflow = [workflow];
+          } else {
+            core.setFailed(
+              "Workflow mapping must be a string or an array of strings"
+            );
+            system.exit(1);
+            return;
+          }
+        }
+        isAffected(name, workflow, owner, repo, branch, octokit);
+      })
     );
     core.setOutput("affectedPackages", JSON.stringify(results));
   } catch (e) {
@@ -9838,6 +9859,8 @@ const run = async () => {
     return;
   }
 };
+
+run();
 
 })();
 

@@ -6,7 +6,7 @@ inputs:
     required: true
     default: "main"
   nameToWorkflowMapping:
-    description: 'JSON object describing the relationship of a turborepo package name to the workflow to check: {"@org/packageA": "deployPackageA.yaml"}'
+    description: 'JSON object describing the relationship of a turborepo package name to the workflow to check: {"@org/packageA": ["deployPackageA.yaml"]}'
     required: true
     default: "{}"
 
