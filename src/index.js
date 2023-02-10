@@ -4,20 +4,16 @@ const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 
 const isAffected = async (pck, workflows, owner, repo, branch, octokit) => {
-  const allRuns = await Promise.all(
-    workflows.map((workflow) => {
-      console.log(`retrieving last successful run for ${workflow}...`);
-      return octokit.rest.actions.listWorkflowRuns({
-        owner,
-        repo,
-        workflow_id: workflow,
-        status: "success",
-        branch,
-      });
-    })
-  );
+  for (const workflow of workflows) {
+    console.log(`retrieving last successful run for ${workflow}...`);
 
-  for (const runs of allRuns) {
+    const runs = await octokit.rest.actions.listWorkflowRuns({
+      owner,
+      repo,
+      workflow_id: workflow,
+      status: "success",
+      branch,
+    });
     if (runs.data.workflow_runs.length === 0) {
       console.log("no successful runs found, package is affected");
       return true;
@@ -41,10 +37,11 @@ const isAffected = async (pck, workflows, owner, repo, branch, octokit) => {
       }"`
     );
 
-    if (result?.packages?.contains(pck)) {
+    if (result?.packages?.includes(pck)) {
       return true;
     }
   }
+
   return false;
 };
 
